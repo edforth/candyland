@@ -243,123 +243,102 @@ class Game {
     $youngest_player = array_shift($comparison_players);
     return array_search($youngest_player, $this->players);
   }
+
+  public function takeCard() {
+    $card_index = $this->turn++ % 66;
+    if ($card_index == 0) {
+      $this->deck->shuffle();
+    }
+
+    $card = $this->deck->cards[$card_index];
+
+    switch ($card->type) {
+      case 'red' :
+      case 'purple' :
+      case 'yellow' :
+      case 'blue' :
+      case 'orange' :
+      case 'green' :
+        $times = $this->deck->cards[$card_index]->double ? 2 : 1;
+        for ($loop = 1; $loop <= $times; $loop++) {
+          $position = $this->players[$this->active_player]->position;
+          while ($this->board[$position] != $card->type && $this->board[$position] != 'end') {
+            $position++;
+          }
+          $this->players[$this->active_player]->position = $position;
+        }
+        break;
+      case 'gingerbreadman' :
+        $this->players[$this->active_player]->position = 9;
+        break;
+      case 'candycane' :
+        $this->players[$this->active_player]->position = 20;
+        break;
+      case 'gumdrop' :
+        $this->players[$this->active_player]->position = 42;
+        break;
+      case 'peanut' :
+        $this->players[$this->active_player]->position = 69;
+        break;
+      case 'lollypop' :
+        $this->players[$this->active_player]->position = 92;
+        break;
+      case 'icecream' :
+        $this->players[$this->active_player]->position = 102;
+        break;
+      default :
+        throw new Exception('No card value; aborting');
+        break;
+    }
+
+    $message = 'Turn #' . $this->turn . ': ' . $this->players[$this->active_player]->name . ' drew ';
+    $message .= $card->double ? 'double ' : '';
+    $message .= $card->type . ', then moved to square ' . $this->players[$this->active_player]->position . '.';
+
+    if ($this->players[$this->active_player]->stuck) {
+      $message .= ' Got stuck in the Licorice Space, will lose the next turn.';
+    }
+    if (in_array($this->players[$this->active_player]->position, array(46, 86, 117))) {
+      $this->players[$this->active_player]->stuck = TRUE;
+    }
+    if ($this->players[$this->active_player]->position == 5) {
+      $this->players[$this->active_player]->position = 59;
+      $message .= ' Shortcut! Leaped way ahead and ended on square 59.';
+    }
+    if ($this->players[$this->active_player]->position == 35) {
+      $this->players[$this->active_player]->position = 45;
+      $message .= ' Shortcut! Got a little further ahead and ended on square 45.';
+    }
+
+    render($message);
+  }
+
+  public function play() {
+    // Game loop.
+    while (1) {
+      // Player has lost a turn.
+      if ($this->players[$this->active_player]->stuck) {
+        $this->players[$this->active_player]->stuck = FALSE;
+        render('Turn #' . $this->turn . ': ' . $this->players[$this->active_player]->name . ' is stuck in the Licorice Space.');
+      }
+      // Normal turn.
+      else {
+        $this->takeCard();
+        if ($this->players[$this->active_player]->position == 134) {
+          render('Congratulations ' . $this->players[$this->active_player]->name . ', you won ' . $this->turn . ' turns!');
+          exit;
+        }
+      }
+      // Select next player.
+      if ($this->active_player >= 3) {
+        $this->active_player = 0;
+      }
+      else {
+        $this->active_player++;
+      }
+    }
+  }
 }
 
 $game = new Game();
-
-$turn = 0;
-$output = TRUE;
-
-function doCard() {
-  global $game;
-  $card_index = $game->turn % 66;
-  if ($card_index == 0) {
-    $game->deck->shuffle();
-  }
-  switch ($game->deck->cards[$card_index]->type) {
-    case 'red' :
-    case 'purple' :
-    case 'yellow' :
-    case 'blue' :
-    case 'orange' :
-    case 'green' :
-      $times = $game->deck->cards[$card_index]->double ? 2 : 1;
-      for ($loop = 1; $loop <= $times; $loop++) {
-        $position = $game->players[$game->activeplayer]->position;
-        while ($game->board[$position] != $game->deck->cards[$card_index]->type && $game->board[$position] != 'end') {
-          $position++;
-        }
-        $game->players[$game->activeplayer]->position = $position;
-      }
-      break;
-    case 'gingerbreadman' :
-      $game->players[$game->activeplayer]->position = 9;
-      break;
-    case 'candycane' :
-      $game->players[$game->activeplayer]->position = 20;
-      break;
-    case 'gumdrop' :
-      $game->players[$game->activeplayer]->position = 42;
-      break;
-    case 'peanut' :
-      $game->players[$game->activeplayer]->position = 69;
-      break;
-    case 'lollypop' :
-      $game->players[$game->activeplayer]->position = 92;
-      break;
-    case 'icecream' :
-      $game->players[$game->activeplayer]->position = 102;
-      break;
-    default :
-      throw new Exception('No card value; aborting');
-      break;
-  }
-}
-
-function report() {
-  global $game;
-
-  $message = 'Turn #' . $game->turn . ': ' . $game->players[$game->activeplayer]->name . ' drew ';
-  $card_index = $game->turn % 66;
-  $message .= $game->deck->cards[$card_index]->double ? 'double ' : '';
-  $message .= $game->deck->cards[$card_index]->type . ', then moved to square ' . $game->players[$game->activeplayer]->position . '.';
-  if ($game->players[$game->activeplayer]->stuck) {
-    $message .= ' Got stuck in the licorice swamp, will lose the next turn.';
-  }
-  render($message);
-}
-
-function checkBoard() {
-  global $game, $output;
-  if (in_array($game->players[$game->activeplayer]->position, array(46, 86, 117))) {
-    $game->players[$game->activeplayer]->stuck = TRUE;
-  }
-  if ($game->players[$game->activeplayer]->position == 5) {
-    $game->players[$game->activeplayer]->position = 59;
-    if ($output === TRUE) {
-      render($game->players[$game->activeplayer]->name . ' took a shortcut.');
-    }
-  }
-  if ($game->players[$game->activeplayer]->position == 35) {
-    $game->players[$game->activeplayer]->position = 45;
-    if ($output === TRUE) {
-      render($game->players[$game->activeplayer]->name . ' took a shortcut.');
-    }
-  }
-}
-
-function playgame() {
-  global $game, $output;
-  // Game loop.
-  while (1) {
-    // Player has lost a turn.
-    if ($game->players[$game->activeplayer]->stuck) {
-      $game->players[$game->activeplayer]->stuck = FALSE;
-      if ($output === TRUE) {
-        render('Turn #' . $game->turn . ': ' . $game->players[$game->activeplayer]->name . ' is stuck in the Licorice Space.');
-      }
-    }
-    // Normal turn.
-    else {
-      doCard();
-      $game->turn++;
-      checkBoard();
-      if ($output === TRUE) {
-        report();
-      }
-      if ($game->players[$game->activeplayer]->position == 134) {
-        render('Congratulations ' . $game->players[$game->activeplayer]->name . ', you won ' . $game->turn . ' turns!');
-        exit;
-      }
-    }
-    // Select next player.
-    if ($game->activeplayer >= 3) {
-      $game->activeplayer = 0;
-    }
-    else {
-      $game->activeplayer++;
-    }
-  }
-}
-
-playgame();
+$game->play();
