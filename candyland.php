@@ -223,6 +223,8 @@ class Game {
     134 => 'end',
   );
   public $players = array();
+  public $active_player;
+  public $turn;
 
   public function __construct() {
     $this->deck = new Deck;
@@ -232,6 +234,7 @@ class Game {
       new Player('Sarah', 33),
       new Player('Jon', 34),
     );
+    $this->active_player = $this->determineYoungestPlayer();
   }
 
   public function determineYoungestPlayer() {
@@ -245,13 +248,11 @@ class Game {
 $game = new Game();
 
 $turn = 0;
-$turnno = 0;
-$activeplayer = $game->determineYoungestPlayer();
 $output = TRUE;
 
 function doCard() {
-  global $turn, $activeplayer, $game;
-  $card_index = $turn % 66;
+  global $game;
+  $card_index = $game->turn % 66;
   if ($card_index == 0) {
     $game->deck->shuffle();
   }
@@ -264,30 +265,30 @@ function doCard() {
     case 'green' :
       $times = $game->deck->cards[$card_index]->double ? 2 : 1;
       for ($loop = 1; $loop <= $times; $loop++) {
-        $position = $game->players[$activeplayer]->position;
+        $position = $game->players[$game->activeplayer]->position;
         while ($game->board[$position] != $game->deck->cards[$card_index]->type && $game->board[$position] != 'end') {
           $position++;
         }
-        $game->players[$activeplayer]->position = $position;
+        $game->players[$game->activeplayer]->position = $position;
       }
       break;
     case 'gingerbreadman' :
-      $game->players[$activeplayer]->position = 9;
+      $game->players[$game->activeplayer]->position = 9;
       break;
     case 'candycane' :
-      $game->players[$activeplayer]->position = 20;
+      $game->players[$game->activeplayer]->position = 20;
       break;
     case 'gumdrop' :
-      $game->players[$activeplayer]->position = 42;
+      $game->players[$game->activeplayer]->position = 42;
       break;
     case 'peanut' :
-      $game->players[$activeplayer]->position = 69;
+      $game->players[$game->activeplayer]->position = 69;
       break;
     case 'lollypop' :
-      $game->players[$activeplayer]->position = 92;
+      $game->players[$game->activeplayer]->position = 92;
       break;
     case 'icecream' :
-      $game->players[$activeplayer]->position = 102;
+      $game->players[$game->activeplayer]->position = 102;
       break;
     default :
       throw new Exception('No card value; aborting');
@@ -296,71 +297,67 @@ function doCard() {
 }
 
 function report() {
-  global $activeplayer, $turn, $game;
+  global $game;
 
-  $message = 'Turn #' . $turn . ': ' . $game->players[$activeplayer]->name . ' drew ';
-  $card_index = $turn % 66;
+  $message = 'Turn #' . $game->turn . ': ' . $game->players[$game->activeplayer]->name . ' drew ';
+  $card_index = $game->turn % 66;
   $message .= $game->deck->cards[$card_index]->double ? 'double ' : '';
-  $message .= $game->deck->cards[$card_index]->type . ', then moved to square ' . $game->players[$activeplayer]->position . '.';
-  if ($game->players[$activeplayer]->stuck) {
+  $message .= $game->deck->cards[$card_index]->type . ', then moved to square ' . $game->players[$game->activeplayer]->position . '.';
+  if ($game->players[$game->activeplayer]->stuck) {
     $message .= ' Got stuck in the licorice swamp, will lose the next turn.';
   }
   render($message);
 }
 
 function checkBoard() {
-  global $game, $activeplayer, $output;
-  if (in_array($game->players[$activeplayer]->position, array(46, 86, 117))) {
-    $game->players[$activeplayer]->stuck = TRUE;
+  global $game, $output;
+  if (in_array($game->players[$game->activeplayer]->position, array(46, 86, 117))) {
+    $game->players[$game->activeplayer]->stuck = TRUE;
   }
-  if ($game->players[$activeplayer]->position == 5) {
-    $game->players[$activeplayer]->position = 59;
+  if ($game->players[$game->activeplayer]->position == 5) {
+    $game->players[$game->activeplayer]->position = 59;
     if ($output === TRUE) {
-      render($game->players[$activeplayer]->name . ' took a shortcut.');
+      render($game->players[$game->activeplayer]->name . ' took a shortcut.');
     }
   }
-  if ($game->players[$activeplayer]->position == 35) {
-    $game->players[$activeplayer]->position = 45;
+  if ($game->players[$game->activeplayer]->position == 35) {
+    $game->players[$game->activeplayer]->position = 45;
     if ($output === TRUE) {
-      render($game->players[$activeplayer]->name . ' took a shortcut.');
+      render($game->players[$game->activeplayer]->name . ' took a shortcut.');
     }
   }
 }
 
 function playgame() {
-  global $game, $activeplayer, $turn, $output, $turnno;
+  global $game, $output;
   // Game loop.
   while (1) {
     // Player has lost a turn.
-    if ($game->players[$activeplayer]->stuck) {
-      $game->players[$activeplayer]->stuck = FALSE;
+    if ($game->players[$game->activeplayer]->stuck) {
+      $game->players[$game->activeplayer]->stuck = FALSE;
       if ($output === TRUE) {
-        render('Turn #' . $turn . ': ' . $game->players[$activeplayer]->name . ' is stuck in the Licorice Space.');
+        render('Turn #' . $game->turn . ': ' . $game->players[$game->activeplayer]->name . ' is stuck in the Licorice Space.');
       }
     }
     // Normal turn.
     else {
       doCard();
-      $turn++;
+      $game->turn++;
       checkBoard();
       if ($output === TRUE) {
         report();
       }
-      if ($game->players[$activeplayer]->position == 134 && $output === TRUE) {
-        render('Congratulations ' . $game->players[$activeplayer]->name . ', you win!');
-        exit;
-      }
-      elseif ($game->players[$activeplayer]->position == 134) {
-        render('Congratulations ' . $game->players[$activeplayer]->name . ', you won ' . $turn . ' turns!');
+      if ($game->players[$game->activeplayer]->position == 134) {
+        render('Congratulations ' . $game->players[$game->activeplayer]->name . ', you won ' . $game->turn . ' turns!');
         exit;
       }
     }
     // Select next player.
-    if ($activeplayer >= 3) {
-      $activeplayer = 0;
+    if ($game->activeplayer >= 3) {
+      $game->activeplayer = 0;
     }
     else {
-      $activeplayer++;
+      $game->activeplayer++;
     }
   }
 }
