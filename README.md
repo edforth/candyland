@@ -1,6 +1,6 @@
 # Ed Forth's Candy Land Simulator
 
-Fully implements the 2004 ruleset.
+Fully implements the 2004 ruleset, with the exception of the "easy" mode.
 
 # Development log
 

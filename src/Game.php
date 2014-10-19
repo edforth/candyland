@@ -244,7 +244,7 @@ class Game {
       else {
         $this->takeCard();
         if ($this->players[$this->active_player]->position == 134) {
-          render('Congratulations ' . $this->players[$this->active_player]->name . ', you won ' . $this->turn . ' turns!');
+          render('Congratulations ' . $this->players[$this->active_player]->name . ', you won in ' . $this->turn . ' turns!');
           exit;
         }
       }
