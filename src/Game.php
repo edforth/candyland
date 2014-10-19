@@ -170,6 +170,7 @@ class Game {
     }
 
     $card = $this->deck->cards[$card_index];
+    $player = $this->players[$this->active_player];
 
     switch ($card->type) {
       case 'red' :
@@ -178,54 +179,54 @@ class Game {
       case 'blue' :
       case 'orange' :
       case 'green' :
-        $times = $this->deck->cards[$card_index]->double ? 2 : 1;
+        $times = $card->double ? 2 : 1;
         for ($loop = 1; $loop <= $times; $loop++) {
-          $position = $this->players[$this->active_player]->position;
+          $position = $player->position;
           while ($this->board[$position] != $card->type && $this->board[$position] != 'end') {
             $position++;
           }
-          $this->players[$this->active_player]->position = $position;
+          $player->position = $position;
         }
         break;
       case 'gingerbreadman' :
-        $this->players[$this->active_player]->position = 9;
+        $player->position = 9;
         break;
       case 'candycane' :
-        $this->players[$this->active_player]->position = 20;
+        $player->position = 20;
         break;
       case 'gumdrop' :
-        $this->players[$this->active_player]->position = 42;
+        $player->position = 42;
         break;
       case 'peanut' :
-        $this->players[$this->active_player]->position = 69;
+        $player->position = 69;
         break;
       case 'lollypop' :
-        $this->players[$this->active_player]->position = 92;
+        $player->position = 92;
         break;
       case 'icecream' :
-        $this->players[$this->active_player]->position = 102;
+        $player->position = 102;
         break;
       default :
         throw new Exception('No card value; aborting');
         break;
     }
 
-    $message = 'Turn #' . $this->turn . ': ' . $this->players[$this->active_player]->name . ' drew ';
+    $message = 'Turn #' . $this->turn . ': ' . $player->name . ' drew ';
     $message .= $card->double ? 'double ' : '';
-    $message .= $card->type . ', then moved to square ' . $this->players[$this->active_player]->position . '.';
+    $message .= $card->type . ', then moved to square ' . $player->position . '.';
 
-    if ($this->players[$this->active_player]->stuck) {
+    if ($player->stuck) {
       $message .= ' Got stuck in the Licorice Space, will lose the next turn.';
     }
-    if (in_array($this->players[$this->active_player]->position, array(46, 86, 117))) {
-      $this->players[$this->active_player]->stuck = TRUE;
+    if (in_array($player->position, array(46, 86, 117))) {
+      $player->stuck = TRUE;
     }
-    if ($this->players[$this->active_player]->position == 5) {
-      $this->players[$this->active_player]->position = 59;
+    if ($player->position == 5) {
+      $player->position = 59;
       $message .= ' Shortcut! Leaped way ahead and ended on square 59.';
     }
-    if ($this->players[$this->active_player]->position == 35) {
-      $this->players[$this->active_player]->position = 45;
+    if ($player->position == 35) {
+      $player->position = 45;
       $message .= ' Shortcut! Got a little further ahead and ended on square 45.';
     }
 
@@ -244,8 +245,7 @@ class Game {
       else {
         $this->takeCard();
         if ($this->players[$this->active_player]->position == 134) {
-          render('Congratulations ' . $this->players[$this->active_player]->name . ', you won in ' . $this->turn . ' turns!');
-          exit;
+          break;
         }
       }
       // Select next player.
@@ -256,5 +256,10 @@ class Game {
         $this->active_player++;
       }
     }
+    $this->win();
+  }
+
+  public function win() {
+    render('Congratulations ' . $this->players[$this->active_player]->name . ', you won in ' . $this->turn . ' turns!');
   }
 }
